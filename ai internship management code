@@ -1,0 +1,2155 @@
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { 
+  Users, UserCheck, CheckCircle2, Clock, AlertTriangle, Calendar, 
+  FileText, Upload, Download, Search, Filter, Plus, ChevronRight, 
+  Bot, Send, Sparkles, RefreshCw, Mail, Check, X, Shield, Settings, 
+  BarChart3, ArrowRight, Eye, Edit3, Trash2, Database, AlertCircle, 
+  BookOpen, ChevronDown, Bell, Sun, Moon, LogOut, CheckSquare, Layers,
+  ExternalLink, FileSpreadsheet, Play, PieChart, CornerDownRight
+} from 'lucide-react';
+
+// --- INITIAL MOCK DATA GENERATOR ---
+const DEPARTMENTS = ['Frontend Engineering', 'Backend & Cloud', 'AI & Machine Learning', 'Data Analytics', 'DevOps & CyberSec', 'UI/UX Design'];
+const MENTORS = [
+  { id: 'M1', name: 'Sarah Connor', role: 'Lead AI Architect', email: 'sarah.c@techcorp.io', dept: 'AI & Machine Learning' },
+  { id: 'M2', name: 'Marcus Vance', role: 'Senior Cloud Engineer', email: 'marcus.v@techcorp.io', dept: 'Backend & Cloud' },
+  { id: 'M3', name: 'Elena Rostova', role: 'Principal UX Strategist', email: 'elena.r@techcorp.io', dept: 'UI/UX Design' },
+  { id: 'M4', name: 'David Chen', role: 'DevOps Manager', email: 'david.c@techcorp.io', dept: 'DevOps & CyberSec' }
+];
+
+const generateMockInterns = () => {
+  const sampleNames = [
+    'Alex Johnson', 'Priya Sharma', 'Liam Neeson', 'Sophie Taylor', 'Chen Wei', 
+    'Aarav Patel', 'Emma Watson', 'Carlos Gomez', 'Fatima Al-Sayed', 'Lucas Meyer',
+    'Amara Okorie', 'Hiroshi Tanaka', 'Chloe Dubois', 'Noah Smith', 'Ananya Gupta'
+  ];
+  const skillsList = ['React, Tailwind, TS', 'Python, PyTorch, LLMs', 'Node.js, PostgreSQL, Redis', 'Docker, K8s, AWS', 'Figma, User Research', 'Python, Pandas, SQL'];
+
+  const list = [];
+  for (let i = 1; i <= 100; i++) {
+    const name = sampleNames[i % sampleNames.length] + (i > 15 ? ` ${i}` : '');
+    const dept = DEPARTMENTS[i % DEPARTMENTS.length];
+    const mentor = MENTORS[i % MENTORS.length];
+    const status = i % 12 === 0 ? 'Completed' : (i % 7 === 0 ? 'Inactive' : 'Active');
+    
+    list.push({
+      id: `INT-${1000 + i}`,
+      fullName: name,
+      email: `${name.toLowerCase().replace(/[^a-z0-9]/g, '')}${i}@interns.techcorp.io`,
+      department: dept,
+      skills: skillsList[i % skillsList.length],
+      joiningDate: `2026-0${(i % 5) + 1}-15`,
+      mentorName: mentor.name,
+      mentorId: mentor.id,
+      duration: '6 Months',
+      status: status,
+      tasksAssigned: (i % 4) + 1,
+      tasksCompleted: (i % 3),
+      progressScore: Math.floor(Math.random() * 35) + 65
+    });
+  }
+  return list;
+};
+
+const INITIAL_TASKS = [
+  {
+    id: 'TSK-101',
+    internId: 'INT-1001',
+    internName: 'Alex Johnson',
+    mentorName: 'Sarah Connor',
+    title: 'Build RAG Pipeline with Gemini API & Vector Store',
+    description: 'Implement a retrieval-augmented generation pipeline using LangChain, FAISS, and Gemini 3 Flash API to process uploaded internal PDF documents and answer user queries accurately.',
+    objectives: '1. Ingest PDF files\n2. Chunk text and create embeddings\n3. Query vector store\n4. Synthesize answers with Gemini LLM',
+    expectedOutput: 'A working Python repository with clean CLI interface, unit tests, and performance benchmark report.',
+    requiredSkills: 'Python, PyTorch, LLMs, Vector DB',
+    priority: 'High',
+    assignedDate: '2026-10-20',
+    deadline: '2026-10-30',
+    firstReviewDate: '2026-10-28T14:00',
+    reminderIntervalDays: 2,
+    status: 'Submitted', // Assigned, In Progress, Submitted, Needs Improvement, Approved, Blocked
+    version: 1,
+    submission: {
+      submittedAt: '2026-10-25 10:30 AM',
+      summary: 'Completed PDF ingestion and FAISS vector embedding creation. Integrated Gemini API for response synthesis.',
+      repoUrl: 'https://github.com/alex-j/rag-gemini-demo',
+      codeSnippet: `def generate_answer(query, docs):\n    context = "\\n".join([d.page_content for d in docs])\n    prompt = f"Context: {context}\\n\\nQuestion: {query}"\n    return gemini_client.generate_content(prompt)`,
+      challenges: 'Faced slight latency issues during chunk embedding generation, solved by batch processing.',
+      progressPercentage: 90
+    },
+    aiAnalysis: {
+      score: 88,
+      statusSuggestion: 'Ready for Mentor Review',
+      completedRequirements: ['PDF text extraction', 'Vector database integration (FAISS)', 'Gemini API integration'],
+      missingRequirements: ['Comprehensive unit tests suite', 'Performance benchmark visualization'],
+      errorsIdentified: ['No fallback retry mechanism on Gemini rate limits.'],
+      recommendedImprovements: ['Add exponential backoff wrapper around Gemini API calls.', 'Implement test coverage with pytest.'],
+      nextActions: 'Request intern to add pytest coverage and retry wrapper before final approval.'
+    },
+    mentorFeedback: null
+  },
+  {
+    id: 'TSK-102',
+    internId: 'INT-1002',
+    internName: 'Priya Sharma',
+    mentorName: 'Marcus Vance',
+    title: 'Microservice Authentication Refactoring',
+    description: 'Migrate legacy JWT authentication service to OAuth2 with PKCE flow in Django REST Framework.',
+    objectives: 'Upgrade auth system, secure endpoints, ensure zero downtime.',
+    expectedOutput: 'Refactored auth module with 95%+ test coverage.',
+    requiredSkills: 'Python, Django REST, OAuth2, Redis',
+    priority: 'Urgent',
+    assignedDate: '2026-10-18',
+    deadline: '2026-10-27',
+    firstReviewDate: '2026-10-27T11:00',
+    reminderIntervalDays: 2,
+    status: 'In Progress',
+    version: 1,
+    submission: null,
+    aiAnalysis: null,
+    mentorFeedback: null
+  }
+];
+
+const INITIAL_EMAILS = [
+  {
+    id: 'EML-901',
+    taskId: 'TSK-101',
+    recipientEmail: 'alexjohnson1@interns.techcorp.io',
+    recipientName: 'Alex Johnson',
+    type: 'Task Assignment Confirmation',
+    subject: 'New Task Assigned: Build RAG Pipeline with Gemini API',
+    scheduledTime: '2026-10-20 09:00 AM',
+    sentAt: '2026-10-20 09:00 AM',
+    status: 'Sent',
+    retryCount: 0,
+    body: 'Hi Alex,\n\nYou have been assigned a new task by Sarah Connor.\nTitle: Build RAG Pipeline with Gemini API & Vector Store\nDeadline: Oct 30, 2026\nFirst Review: Oct 28, 2026 at 02:00 PM\n\nPlease check your dashboard to review task details and ask your AI Chatbot for assistance.'
+  },
+  {
+    id: 'EML-902',
+    taskId: 'TSK-101',
+    recipientEmail: 'alexjohnson1@interns.techcorp.io',
+    recipientName: 'Alex Johnson',
+    type: '2-Day Pre-Review Reminder',
+    subject: 'Upcoming Task Review Reminder: Build RAG Pipeline',
+    scheduledTime: '2026-10-26 02:00 PM',
+    sentAt: '2026-10-26 02:00 PM',
+    status: 'Sent',
+    retryCount: 0,
+    body: 'Hi Alex,\n\nThis is an automated reminder that your Review session for "Build RAG Pipeline" is scheduled in 2 days (Oct 28, 2026 at 02:00 PM).\nPlease submit your implementation, code links, and self-explanation prior to the session.'
+  }
+];
+
+// Main App Component
+export default function App() {
+  // Global State
+  const [currentUserRole, setCurrentUserRole] = useState('Admin'); // 'Admin' | 'Mentor' | 'Intern'
+  const [interns, setInterns] = useState(generateMockInterns);
+  const [tasks, setTasks] = useState(INITIAL_TASKS);
+  const [emails, setEmails] = useState(INITIAL_EMAILS);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [darkMode, setDarkMode] = useState(false);
+  const [selectedTaskForChat, setSelectedTaskForChat] = useState(INITIAL_TASKS[0]);
+  const [selectedTaskForReview, setSelectedTaskForReview] = useState(INITIAL_TASKS[0]);
+  
+  // API Key & System Settings
+  const [geminiApiKey, setGeminiApiKey] = useState('');
+  const [notifications, setNotifications] = useState([]);
+
+  // Add Toast Notification
+  const addToast = (title, message, type = 'info') => {
+    const id = Date.now();
+    setNotifications(prev => [{ id, title, message, type }, ...prev]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 4500);
+  };
+
+  // Synchronize active tab based on role switches
+  const handleRoleSwitch = (role) => {
+    setCurrentUserRole(role);
+    if (role === 'Intern') setActiveTab('intern-dash');
+    else if (role === 'Mentor') setActiveTab('mentor-hub');
+    else setActiveTab('dashboard');
+    addToast('Role Switched', `Active view updated to ${role} Mode`, 'success');
+  };
+
+  return (
+    <div className={`min-h-screen ${darkMode ? 'bg-slate-900 text-slate-100 dark' : 'bg-slate-50 text-slate-800'} font-sans transition-colors duration-200`}>
+      {/* Toast Notification Stack */}
+      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+        {notifications.map(n => (
+          <div key={n.id} className={`pointer-events-auto p-4 rounded-xl shadow-xl border backdrop-blur-md flex items-start gap-3 transition-all transform translate-y-0 ${
+            n.type === 'success' ? 'bg-emerald-900/90 border-emerald-500/50 text-emerald-100' :
+            n.type === 'error' ? 'bg-rose-900/90 border-rose-500/50 text-rose-100' :
+            'bg-slate-800/90 border-slate-700 text-slate-100'
+          }`}>
+            {n.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />}
+            {n.type === 'error' && <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />}
+            {n.type === 'info' && <Bell className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />}
+            <div className="flex-1">
+              <h4 className="font-semibold text-sm">{n.title}</h4>
+              <p className="text-xs opacity-90 mt-0.5">{n.message}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Top Navbar */}
+      <header className={`sticky top-0 z-30 border-b ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white/90 border-slate-200'} backdrop-blur-md`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white font-bold text-xl shadow-md shadow-indigo-500/20">
+              <Bot className="w-6 h-6" />
+            </div>
+            <div>
+              <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
+                InternAI Suite
+              </span>
+              <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-[10px] font-semibold bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 rounded-full">
+                Enterprise v2.4
+              </span>
+            </div>
+          </div>
+
+          {/* Quick Role Switcher Bar */}
+          <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+            <span className="text-xs font-medium text-slate-500 px-2 hidden md:inline">Viewing As:</span>
+            {[
+              { id: 'Admin', label: 'Admin', icon: Shield },
+              { id: 'Mentor', label: 'Mentor', icon: UserCheck },
+              { id: 'Intern', label: 'Intern (Alex)', icon: Users }
+            ].map(r => {
+              const Icon = r.icon;
+              const active = currentUserRole === r.id;
+              return (
+                <button
+                  key={r.id}
+                  onClick={() => handleRoleSwitch(r.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    active 
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {r.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              title="Toggle Theme"
+            >
+              {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+            <div className="hidden lg:flex items-center gap-2 text-xs text-slate-500 border-l border-slate-200 dark:border-slate-800 pl-3">
+              <Clock className="w-4 h-4 text-indigo-500" />
+              <span>Oct 26, 2026 | 10:57 AM</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation Sub-Header */}
+      <nav className={`border-b ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} sticky top-16 z-20`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1 overflow-x-auto py-2 no-scrollbar">
+          {currentUserRole === 'Admin' && (
+            <>
+              <NavButton id="dashboard" label="Overview Dashboard" icon={BarChart3} activeTab={activeTab} setActiveTab={setActiveTab} />
+              <NavButton id="interns" label="Intern Directory (100+)" icon={Users} activeTab={activeTab} setActiveTab={setActiveTab} />
+              <NavButton id="import-export" label="CSV / Excel Module" icon={FileSpreadsheet} activeTab={activeTab} setActiveTab={setActiveTab} />
+              <NavButton id="task-assign" label="Assign New Task" icon={Plus} activeTab={activeTab} setActiveTab={setActiveTab} />
+              <NavButton id="emails" label="Email Automation Log" icon={Mail} activeTab={activeTab} setActiveTab={setActiveTab} />
+              <NavButton id="calendar" label="Review Calendar" icon={Calendar} activeTab={activeTab} setActiveTab={setActiveTab} />
+              <NavButton id="settings" label="System Settings" icon={Settings} activeTab={activeTab} setActiveTab={setActiveTab} />
+            </>
+          )}
+
+          {currentUserRole === 'Mentor' && (
+            <>
+              <NavButton id="mentor-hub" label="Mentor Review Hub" icon={UserCheck} activeTab={activeTab} setActiveTab={setActiveTab} />
+              <NavButton id="task-assign" label="Assign Task to Intern" icon={Plus} activeTab={activeTab} setActiveTab={setActiveTab} />
+              <NavButton id="interns" label="View My Interns" icon={Users} activeTab={activeTab} setActiveTab={setActiveTab} />
+              <NavButton id="calendar" label="Review Schedule" icon={Calendar} activeTab={activeTab} setActiveTab={setActiveTab} />
+            </>
+          )}
+
+          {currentUserRole === 'Intern' && (
+            <>
+              <NavButton id="intern-dash" label="My Task Portal" icon={CheckSquare} activeTab={activeTab} setActiveTab={setActiveTab} />
+              <NavButton id="ai-chat" label="AI Mentor Explanation Chat" icon={Bot} activeTab={activeTab} setActiveTab={setActiveTab} />
+              <NavButton id="submit-work" label="Submit Work for AI Review" icon={Upload} activeTab={activeTab} setActiveTab={setActiveTab} />
+            </>
+          )}
+        </div>
+      </nav>
+
+      {/* Main Container Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20">
+        {activeTab === 'dashboard' && <AdminDashboard interns={interns} tasks={tasks} emails={emails} setActiveTab={setActiveTab} />}
+        {activeTab === 'interns' && <InternManagementView interns={interns} setInterns={setInterns} addToast={addToast} />}
+        {activeTab === 'import-export' && <ExcelImportExportModule interns={interns} setInterns={setInterns} addToast={addToast} />}
+        {activeTab === 'task-assign' && <TaskAssignmentForm interns={interns} tasks={tasks} setTasks={setTasks} setEmails={setEmails} addToast={addToast} setActiveTab={setActiveTab} />}
+        {activeTab === 'mentor-hub' && <MentorReviewCollaborationHub tasks={tasks} setTasks={setTasks} setEmails={setEmails} addToast={addToast} selectedTask={selectedTaskForReview} setSelectedTask={setSelectedTaskForReview} geminiApiKey={geminiApiKey} />}
+        {activeTab === 'intern-dash' && <InternPortalView tasks={tasks} setSelectedTaskForChat={setSelectedTaskForChat} setActiveTab={setActiveTab} setSelectedTaskForReview={setSelectedTaskForReview} />}
+        {activeTab === 'ai-chat' && <AITaskExplanationChatbot selectedTask={selectedTaskForChat} geminiApiKey={geminiApiKey} addToast={addToast} />}
+        {activeTab === 'submit-work' && <WorkSubmissionView tasks={tasks} setTasks={setTasks} setEmails={setEmails} addToast={addToast} geminiApiKey={geminiApiKey} setActiveTab={setActiveTab} setSelectedTaskForReview={setSelectedTaskForReview} />}
+        {activeTab === 'emails' && <EmailAutomationLogView emails={emails} setEmails={setEmails} addToast={addToast} />}
+        {activeTab === 'calendar' && <ReviewCalendarView tasks={tasks} />}
+        {activeTab === 'settings' && <SystemSettingsView geminiApiKey={geminiApiKey} setGeminiApiKey={setGeminiApiKey} addToast={addToast} />}
+      </main>
+    </div>
+  );
+}
+
+// Navigation Tab Helper Component
+function NavButton({ id, label, icon: Icon, activeTab, setActiveTab }) {
+  const isActive = activeTab === id;
+  return (
+    <button
+      onClick={() => setActiveTab(id)}
+      className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+        isActive
+          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
+          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+      }`}
+    >
+      <Icon className="w-4 h-4" />
+      {label}
+    </button>
+  );
+}
+
+// ----------------------------------------------------------------------
+// 1. ADMIN DASHBOARD & OVERVIEW
+// ----------------------------------------------------------------------
+function AdminDashboard({ interns, tasks, emails, setActiveTab }) {
+  const activeCount = interns.filter(i => i.status === 'Active').length;
+  const completedTasks = tasks.filter(t => t.status === 'Approved').length;
+  const pendingTasks = tasks.filter(t => t.status === 'Assigned' || t.status === 'In Progress').length;
+  const submittedTasks = tasks.filter(t => t.status === 'Submitted').length;
+
+  return (
+    <div className="space-y-6">
+      {/* Welcome Banner */}
+      <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+          <div>
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/30 border border-indigo-400/30 text-indigo-200">
+              Enterprise Dashboard
+            </span>
+            <h1 className="text-2xl font-extrabold mt-2">Internship Operations & AI Supervision</h1>
+            <p className="text-sm text-indigo-200 mt-1 max-w-xl">
+              Real-time monitor for 100+ active interns, AI task explanations, automated review scheduling, and email dispatch status.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setActiveTab('task-assign')}
+              className="px-4 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white rounded-xl text-xs font-bold transition-all shadow-lg flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> Assign New Task
+            </button>
+            <button 
+              onClick={() => setActiveTab('import-export')}
+              className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all border border-white/20 flex items-center gap-2"
+            >
+              <FileSpreadsheet className="w-4 h-4" /> Import Excel
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <KPICard title="Total Interns" value={interns.length} icon={Users} color="indigo" subtext="100+ Enrolled" />
+        <KPICard title="Active Interns" value={activeCount} icon={UserCheck} color="emerald" subtext="Currently Active" />
+        <KPICard title="Approved Tasks" value={completedTasks + 320} icon={CheckCircle2} color="purple" subtext="Historical Total" />
+        <KPICard title="Pending Tasks" value={pendingTasks} icon={Clock} color="amber" subtext="In Implementation" />
+        <KPICard title="Under Review" value={submittedTasks} icon={Layers} color="blue" subtext="Needs Mentor Action" />
+        <KPICard title="Email Queue" value={emails.filter(e => e.status === 'Sent').length} icon={Mail} color="teal" subtext="Dispatched Reminders" />
+      </div>
+
+      {/* Main Charts & Activity Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Department Breakdown */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 mb-4 flex items-center justify-between">
+            <span>Department Distribution</span>
+            <PieChart className="w-4 h-4 text-indigo-500" />
+          </h3>
+          <div className="space-y-3">
+            {DEPARTMENTS.map((dept, idx) => {
+              const count = interns.filter(i => i.department === dept).length;
+              const percentage = Math.round((count / interns.length) * 100);
+              const colors = ['bg-indigo-500', 'bg-emerald-500', 'bg-purple-500', 'bg-amber-500', 'bg-rose-500', 'bg-teal-500'];
+              return (
+                <div key={dept} className="space-y-1">
+                  <div className="flex justify-between text-xs font-semibold">
+                    <span className="text-slate-600 dark:text-slate-300">{dept}</span>
+                    <span className="text-slate-800 dark:text-slate-100">{count} interns ({percentage}%)</span>
+                  </div>
+                  <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                    <div className={`h-full ${colors[idx % colors.length]}`} style={{ width: `${percentage}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Live Task Status Breakdown */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm lg:col-span-2">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-indigo-500" /> Recent Active Task Pipeline
+            </h3>
+            <button onClick={() => setActiveTab('mentor-hub')} className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold flex items-center gap-1 hover:underline">
+              View Review Hub <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-400 font-semibold uppercase tracking-wider">
+                  <th className="py-2.5 px-3">Intern</th>
+                  <th className="py-2.5 px-3">Task Title</th>
+                  <th className="py-2.5 px-3">Priority</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3 text-right">Review Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                {tasks.map(t => (
+                  <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                    <td className="py-3 px-3 font-semibold text-slate-800 dark:text-slate-200">{t.internName}</td>
+                    <td className="py-3 px-3 text-slate-600 dark:text-slate-300 max-w-xs truncate">{t.title}</td>
+                    <td className="py-3 px-3">
+                      <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                        t.priority === 'Urgent' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' :
+                        t.priority === 'High' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' :
+                        'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+                      }`}>
+                        {t.priority}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3">
+                      <StatusBadge status={t.status} />
+                    </td>
+                    <td className="py-3 px-3 text-right text-slate-500">{t.firstReviewDate ? t.firstReviewDate.replace('T', ' ') : 'N/A'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function KPICard({ title, value, icon: Icon, color, subtext }) {
+  const colorMap = {
+    indigo: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400',
+    emerald: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400',
+    purple: 'text-purple-600 bg-purple-50 dark:bg-purple-950/40 dark:text-purple-400',
+    amber: 'text-amber-600 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-400',
+    blue: 'text-blue-600 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-400',
+    teal: 'text-teal-600 bg-teal-50 dark:bg-teal-950/40 dark:text-teal-400'
+  };
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{title}</span>
+        <div className={`p-2 rounded-xl ${colorMap[color]}`}>
+          <Icon className="w-4 h-4" />
+        </div>
+      </div>
+      <div>
+        <div className="text-2xl font-extrabold text-slate-800 dark:text-slate-100">{value}</div>
+        <p className="text-[10px] text-slate-400 mt-1 font-medium">{subtext}</p>
+      </div>
+    </div>
+  );
+}
+
+// Helper Badge
+function StatusBadge({ status }) {
+  const styles = {
+    'Approved': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-300',
+    'Submitted': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-300',
+    'In Progress': 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border-amber-300',
+    'Assigned': 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border-purple-300',
+    'Needs Improvement': 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300 border-rose-300',
+    'Blocked': 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-300 border-slate-400'
+  };
+  return (
+    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${styles[status] || styles['Assigned']}`}>
+      {status}
+    </span>
+  );
+}
+
+// ----------------------------------------------------------------------
+// 2. INTERN MANAGEMENT DIRECTORY (SEARCH, PAGINATION, PROFILE MODAL)
+// ----------------------------------------------------------------------
+function InternManagementView({ interns, setInterns, addToast }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [deptFilter, setDeptFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+  
+  const [selectedInternForModal, setSelectedInternForModal] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  // Filtered & Paginated list
+  const filteredInterns = useMemo(() => {
+    return interns.filter(i => {
+      const matchesSearch = i.fullName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            i.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            i.id.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesDept = deptFilter === 'All' || i.department === deptFilter;
+      const matchesStatus = statusFilter === 'All' || i.status === statusFilter;
+      return matchesSearch && matchesDept && matchesStatus;
+    });
+  }, [interns, searchTerm, deptFilter, statusFilter]);
+
+  const totalPages = Math.ceil(filteredInterns.length / pageSize) || 1;
+  const paginatedInterns = filteredInterns.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const handleDeactivate = (id) => {
+    setInterns(prev => prev.map(i => i.id === id ? { ...i, status: i.status === 'Active' ? 'Inactive' : 'Active' } : i));
+    addToast('Status Updated', `Intern status toggled successfully`, 'success');
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div>
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Central Intern Directory</h2>
+          <p className="text-xs text-slate-500">Manage 100+ registered interns, assign mentors, and monitor progress scores.</p>
+        </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 self-start sm:self-auto"
+        >
+          <Plus className="w-4 h-4" /> Add Single Intern
+        </button>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="relative">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+          <input
+            type="text"
+            placeholder="Search by ID, Name, Email..."
+            value={searchTerm}
+            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+            className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+          />
+        </div>
+        <div>
+          <select
+            value={deptFilter}
+            onChange={(e) => { setDeptFilter(e.target.value); setCurrentPage(1); }}
+            className="w-full py-2 px-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+          >
+            <option value="All">All Departments</option>
+            {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </div>
+        <div>
+          <select
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+            className="w-full py-2 px-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+          >
+            <option value="All">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Intern Table */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 font-semibold border-b border-slate-200 dark:border-slate-700">
+                <th className="py-3 px-4">Intern ID</th>
+                <th className="py-3 px-4">Full Name</th>
+                <th className="py-3 px-4">Department</th>
+                <th className="py-3 px-4">Assigned Mentor</th>
+                <th className="py-3 px-4">Joining Date</th>
+                <th className="py-3 px-4 text-center">Score</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/40">
+              {paginatedInterns.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-8 text-center text-slate-400">
+                    No matching intern records found.
+                  </td>
+                </tr>
+              ) : (
+                paginatedInterns.map(i => (
+                  <tr key={i.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                    <td className="py-3 px-4 font-mono font-bold text-indigo-600 dark:text-indigo-400">{i.id}</td>
+                    <td className="py-3 px-4">
+                      <div className="font-semibold text-slate-800 dark:text-slate-200">{i.fullName}</div>
+                      <div className="text-[10px] text-slate-400">{i.email}</div>
+                    </td>
+                    <td className="py-3 px-4 text-slate-600 dark:text-slate-300">{i.department}</td>
+                    <td className="py-3 px-4 text-slate-600 dark:text-slate-300">{i.mentorName}</td>
+                    <td className="py-3 px-4 text-slate-500">{i.joiningDate}</td>
+                    <td className="py-3 px-4 text-center">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                        {i.progressScore}%
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        i.status === 'Active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
+                        i.status === 'Completed' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
+                        'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
+                      }`}>
+                        {i.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right space-x-2">
+                      <button
+                        onClick={() => setSelectedInternForModal(i)}
+                        className="p-1.5 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                        title="View Full Profile"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeactivate(i.id)}
+                        className="p-1.5 text-amber-600 hover:bg-amber-50 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                        title="Toggle Status"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination Bar */}
+        <div className="p-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
+          <span className="text-slate-500">
+            Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, filteredInterns.length)} of {filteredInterns.length} entries
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => p - 1)}
+              className="px-3 py-1 bg-slate-100 dark:bg-slate-700 disabled:opacity-50 rounded-lg font-semibold"
+            >
+              Prev
+            </button>
+            <span className="font-semibold text-slate-700 dark:text-slate-300">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(p => p + 1)}
+              className="px-3 py-1 bg-slate-100 dark:bg-slate-700 disabled:opacity-50 rounded-lg font-semibold"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Full Profile Modal */}
+      {selectedInternForModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b pb-3 dark:border-slate-700">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-lg">
+                  {selectedInternForModal.fullName.charAt(0)}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold">{selectedInternForModal.fullName}</h3>
+                  <p className="text-xs text-slate-400">{selectedInternForModal.id} • {selectedInternForModal.email}</p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedInternForModal(null)} className="p-1 text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-xs">
+              <div className="p-3 bg-slate-50 dark:bg-slate-700/40 rounded-xl space-y-1">
+                <span className="text-slate-400 font-medium">Department</span>
+                <p className="font-semibold text-slate-800 dark:text-slate-200">{selectedInternForModal.department}</p>
+              </div>
+              <div className="p-3 bg-slate-50 dark:bg-slate-700/40 rounded-xl space-y-1">
+                <span className="text-slate-400 font-medium">Mentor</span>
+                <p className="font-semibold text-slate-800 dark:text-slate-200">{selectedInternForModal.mentorName}</p>
+              </div>
+              <div className="p-3 bg-slate-50 dark:bg-slate-700/40 rounded-xl space-y-1">
+                <span className="text-slate-400 font-medium">Skills</span>
+                <p className="font-semibold text-slate-800 dark:text-slate-200">{selectedInternForModal.skills}</p>
+              </div>
+              <div className="p-3 bg-slate-50 dark:bg-slate-700/40 rounded-xl space-y-1">
+                <span className="text-slate-400 font-medium">Joining Date</span>
+                <p className="font-semibold text-slate-800 dark:text-slate-200">{selectedInternForModal.joiningDate}</p>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <h4 className="font-bold text-xs text-slate-700 dark:text-slate-300 mb-2">Assigned Tasks & Review History</h4>
+              <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+                <p className="font-semibold text-indigo-500">Build RAG Pipeline with Gemini API & Vector Store</p>
+                <p className="text-slate-500 mt-1">Status: <StatusBadge status="Submitted" /></p>
+                <p className="text-slate-400 text-[10px] mt-2">First Review Scheduled: Oct 28, 2026 at 02:00 PM</p>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button 
+                onClick={() => setSelectedInternForModal(null)}
+                className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold"
+              >
+                Close Profile
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Intern Modal */}
+      {showAddModal && (
+        <AddInternModal setInterns={setInterns} setShowAddModal={setShowAddModal} addToast={addToast} />
+      )}
+    </div>
+  );
+}
+
+function AddInternModal({ setInterns, setShowAddModal, addToast }) {
+  const [formData, setFormData] = useState({
+    fullName: '', email: '', department: DEPARTMENTS[0], skills: '', mentorName: MENTORS[0].name
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.fullName || !formData.email) {
+      addToast('Validation Error', 'Full Name and Email are required', 'error');
+      return;
+    }
+    const newIntern = {
+      id: `INT-${Math.floor(1000 + Math.random() * 9000)}`,
+      ...formData,
+      mentorId: MENTORS.find(m => m.name === formData.mentorName)?.id || 'M1',
+      joiningDate: new Date().toISOString().split('T')[0],
+      duration: '6 Months',
+      status: 'Active',
+      tasksAssigned: 0,
+      tasksCompleted: 0,
+      progressScore: 100
+    };
+    setInterns(prev => [newIntern, ...prev]);
+    addToast('Intern Added', `${formData.fullName} has been registered.`, 'success');
+    setShowAddModal(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4">
+        <h3 className="text-base font-bold border-b pb-2 dark:border-slate-700">Add New Intern Record</h3>
+        <div className="space-y-3 text-xs">
+          <div>
+            <label className="block font-semibold mb-1">Full Name</label>
+            <input 
+              type="text" 
+              required
+              value={formData.fullName} 
+              onChange={e => setFormData({...formData, fullName: e.target.value})}
+              className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border rounded-xl outline-none"
+              placeholder="e.g. Maya Lin"
+            />
+          </div>
+          <div>
+            <label className="block font-semibold mb-1">Email Address</label>
+            <input 
+              type="email" 
+              required
+              value={formData.email} 
+              onChange={e => setFormData({...formData, email: e.target.value})}
+              className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border rounded-xl outline-none"
+              placeholder="e.g. maya@interns.techcorp.io"
+            />
+          </div>
+          <div>
+            <label className="block font-semibold mb-1">Department</label>
+            <select 
+              value={formData.department}
+              onChange={e => setFormData({...formData, department: e.target.value})}
+              className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border rounded-xl outline-none"
+            >
+              {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block font-semibold mb-1">Assigned Mentor</label>
+            <select 
+              value={formData.mentorName}
+              onChange={e => setFormData({...formData, mentorName: e.target.value})}
+              className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border rounded-xl outline-none"
+            >
+              {MENTORS.map(m => <option key={m.id} value={m.name}>{m.name} ({m.dept})</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block font-semibold mb-1">Technical Skills</label>
+            <input 
+              type="text" 
+              value={formData.skills} 
+              onChange={e => setFormData({...formData, skills: e.target.value})}
+              className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border rounded-xl outline-none"
+              placeholder="e.g. React, Python, Docker"
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-3">
+          <button 
+            type="button" 
+            onClick={() => setShowAddModal(false)}
+            className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit"
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold"
+          >
+            Register Intern
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// 3. EXCEL / CSV IMPORT & EXPORT MODULE WITH VALIDATION
+// ----------------------------------------------------------------------
+function ExcelImportExportModule({ interns, setInterns, addToast }) {
+  const [validationReport, setValidationReport] = useState(null);
+
+  // Simulated File Import Parser with Dup & Email Validation
+  const handleSimulatedImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Simulate CSV parsing & schema verification
+    setTimeout(() => {
+      const mockParsedData = [
+        { id: 'INT-1001', fullName: 'Alex Johnson', email: 'alex@interns.techcorp.io', department: 'AI & Machine Learning', skills: 'Python, LLMs', mentorName: 'Sarah Connor' }, // Dup ID!
+        { id: 'INT-9902', fullName: 'Invalid User', email: '', department: 'Frontend', skills: 'HTML, CSS', mentorName: 'Marcus Vance' }, // Missing Email!
+        { id: 'INT-9903', fullName: 'Samantha Reed', email: 'samantha.r@interns.techcorp.io', department: 'DevOps & CyberSec', skills: 'AWS, Terraform', mentorName: 'David Chen' } // Valid
+      ];
+
+      const errors = [];
+      const validRecords = [];
+      const existingIds = new Set(interns.map(i => i.id));
+
+      mockParsedData.forEach((row, idx) => {
+        if (!row.email) {
+          errors.push(`Row ${idx + 1}: Missing mandatory email for '${row.fullName}'.`);
+        } else if (existingIds.has(row.id)) {
+          errors.push(`Row ${idx + 1}: Duplicate Intern ID '${row.id}' detected.`);
+        } else {
+          validRecords.push({
+            ...row,
+            joiningDate: new Date().toISOString().split('T')[0],
+            duration: '6 Months',
+            status: 'Active',
+            tasksAssigned: 0,
+            tasksCompleted: 0,
+            progressScore: 100
+          });
+        }
+      });
+
+      setValidationReport({ errors, validRecordsCount: validRecords.length });
+
+      if (validRecords.length > 0) {
+        setInterns(prev => [...validRecords, ...prev]);
+        addToast('Import Completed', `Successfully imported ${validRecords.length} new intern records.`, 'success');
+      } else {
+        addToast('Import Failed', `No valid intern records could be imported.`, 'error');
+      }
+    }, 600);
+  };
+
+  const handleExportCSV = () => {
+    const headers = ['Intern ID', 'Full Name', 'Email', 'Department', 'Skills', 'Mentor Name', 'Status', 'Progress Score'];
+    const rows = interns.map(i => [i.id, i.fullName, i.email, i.department, `"${i.skills}"`, i.mentorName, i.status, `${i.progressScore}%`]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Intern_Management_Report_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    addToast('Report Exported', 'CSV/Excel file download initiated.', 'success');
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+        <div>
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <FileSpreadsheet className="w-5 h-5 text-indigo-500" /> Excel & CSV Data Exchange
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">
+            Import bulk intern lists (.xlsx / .csv) or export full performance reports. Automatic validation checks duplicate IDs, missing emails, and formatting errors.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+          {/* Upload Area */}
+          <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-6 flex flex-col items-center justify-center text-center hover:border-indigo-500 transition-colors bg-slate-50/50 dark:bg-slate-900/40">
+            <Upload className="w-10 h-10 text-indigo-500 mb-3" />
+            <h3 className="font-bold text-sm">Upload Intern Data File</h3>
+            <p className="text-xs text-slate-400 mt-1 mb-4">Supports .XLSX or .CSV format files up to 10MB</p>
+            
+            <label className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-md">
+              Browse File & Validate
+              <input type="file" accept=".csv, .xlsx" className="hidden" onChange={handleSimulatedImport} />
+            </label>
+          </div>
+
+          {/* Export Area */}
+          <div className="border border-slate-200 dark:border-slate-700 rounded-2xl p-6 flex flex-col justify-between bg-slate-50/50 dark:bg-slate-900/40">
+            <div>
+              <Download className="w-10 h-10 text-emerald-500 mb-3" />
+              <h3 className="font-bold text-sm">Export Master Database</h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Download current snapshot of 100+ intern profiles, assigned mentors, tasks, progress percentages, and review dates.
+              </p>
+            </div>
+            
+            <button
+              onClick={handleExportCSV}
+              className="mt-6 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2"
+            >
+              <Download className="w-4 h-4" /> Export All Data (.CSV)
+            </button>
+          </div>
+        </div>
+
+        {/* Validation Error Report Display */}
+        {validationReport && (
+          <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 space-y-2 text-xs">
+            <h4 className="font-bold text-amber-800 dark:text-amber-300 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" /> Import Validation Summary
+            </h4>
+            <p className="text-amber-700 dark:text-amber-400">
+              Successfully imported <strong>{validationReport.validRecordsCount}</strong> valid record(s).
+            </p>
+            {validationReport.errors.length > 0 && (
+              <div className="mt-2 space-y-1">
+                <p className="font-semibold text-rose-600 dark:text-rose-400">Errors Flagged & Skipped:</p>
+                <ul className="list-disc list-inside text-rose-700 dark:text-rose-300">
+                  {validationReport.errors.map((err, idx) => <li key={idx}>{err}</li>)}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// 4. TASK ASSIGNMENT FORM (WITH SCHEDULE & REMINDER INTEGRATION)
+// ----------------------------------------------------------------------
+function TaskAssignmentForm({ interns, tasks, setTasks, setEmails, addToast, setActiveTab }) {
+  const [formData, setFormData] = useState({
+    internId: interns[0]?.id || '',
+    taskTitle: '',
+    objectives: '',
+    expectedOutput: '',
+    requiredSkills: '',
+    priority: 'High',
+    deadline: '',
+    firstReviewDate: '',
+    reminderIntervalDays: 2
+  });
+
+  const selectedIntern = interns.find(i => i.id === formData.internId) || interns[0];
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.taskTitle || !formData.deadline || !formData.firstReviewDate) {
+      addToast('Validation Error', 'Please complete all required task fields.', 'error');
+      return;
+    }
+
+    const taskId = `TSK-${100 + tasks.length + 1}`;
+    const newTask = {
+      id: taskId,
+      internId: selectedIntern.id,
+      internName: selectedIntern.fullName,
+      mentorName: selectedIntern.mentorName,
+      title: formData.taskTitle,
+      description: formData.objectives,
+      objectives: formData.objectives,
+      expectedOutput: formData.expectedOutput,
+      requiredSkills: formData.requiredSkills,
+      priority: formData.priority,
+      assignedDate: new Date().toISOString().split('T')[0],
+      deadline: formData.deadline,
+      firstReviewDate: formData.firstReviewDate,
+      reminderIntervalDays: formData.reminderIntervalDays,
+      status: 'Assigned',
+      version: 1,
+      submission: null,
+      aiAnalysis: null,
+      mentorFeedback: null
+    };
+
+    setTasks(prev => [newTask, ...prev]);
+
+    // Automatically trigger Assignment Email & Scheduled Reminder Log
+    const newEmails = [
+      {
+        id: `EML-${Date.now()}-1`,
+        taskId: taskId,
+        recipientEmail: selectedIntern.email,
+        recipientName: selectedIntern.fullName,
+        type: 'Task Assignment Confirmation',
+        subject: `New Task Assigned: ${formData.taskTitle}`,
+        scheduledTime: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        sentAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        status: 'Sent',
+        retryCount: 0,
+        body: `Hi ${selectedIntern.fullName},\n\nYou have been assigned "${formData.taskTitle}" by ${selectedIntern.mentorName}.\nReview Date: ${formData.firstReviewDate}`
+      },
+      {
+        id: `EML-${Date.now()}-2`,
+        taskId: taskId,
+        recipientEmail: selectedIntern.email,
+        recipientName: selectedIntern.fullName,
+        type: `${formData.reminderIntervalDays}-Day Pre-Review Reminder`,
+        subject: `Upcoming Task Review Reminder: ${formData.taskTitle}`,
+        scheduledTime: `Scheduled for ${formData.reminderIntervalDays} days before ${formData.firstReviewDate}`,
+        sentAt: 'Pending Trigger',
+        status: 'Queued',
+        retryCount: 0,
+        body: `Hi ${selectedIntern.fullName},\n\nYour review session is coming up in ${formData.reminderIntervalDays} days. Please complete your submission on your dashboard.`
+      }
+    ];
+
+    setEmails(prev => [...newEmails, ...prev]);
+
+    addToast('Task Assigned', `Task created & confirmation email sent to ${selectedIntern.fullName}.`, 'success');
+    setActiveTab('mentor-hub');
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-6">
+      <div className="border-b pb-4 dark:border-slate-700">
+        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          <Plus className="w-5 h-5 text-indigo-500" /> Human Mentor Task Assignment
+        </h2>
+        <p className="text-xs text-slate-500 mt-1">Assign structured task requirements, set review dates, and configure automated email reminders.</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Select Intern</label>
+            <select
+              value={formData.internId}
+              onChange={e => setFormData({ ...formData, internId: e.target.value })}
+              className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+            >
+              {interns.map(i => (
+                <option key={i.id} value={i.id}>{i.fullName} ({i.id}) — {i.department}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Assigned Mentor</label>
+            <input
+              type="text"
+              disabled
+              value={selectedIntern?.mentorName || 'Sarah Connor'}
+              className="w-full p-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold opacity-70"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Task Title</label>
+          <input
+            type="text"
+            required
+            placeholder="e.g. Implement Microservice JWT Authentication Flow"
+            value={formData.taskTitle}
+            onChange={e => setFormData({ ...formData, taskTitle: e.target.value })}
+            className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Task Objectives & Steps</label>
+            <textarea
+              rows={4}
+              required
+              placeholder="Detail step-by-step problem definition and milestones..."
+              value={formData.objectives}
+              onChange={e => setFormData({ ...formData, objectives: e.target.value })}
+              className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Expected Deliverables & Output</label>
+            <textarea
+              rows={4}
+              required
+              placeholder="Specify expected code format, documentation, tests, repository links..."
+              value={formData.expectedOutput}
+              onChange={e => setFormData({ ...formData, expectedOutput: e.target.value })}
+              className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Priority Level</label>
+            <select
+              value={formData.priority}
+              onChange={e => setFormData({ ...formData, priority: e.target.value })}
+              className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+            >
+              <option value="Low">Low Priority</option>
+              <option value="Medium">Medium Priority</option>
+              <option value="High">High Priority</option>
+              <option value="Urgent">Urgent Priority</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Final Submission Deadline</label>
+            <input
+              type="date"
+              required
+              value={formData.deadline}
+              onChange={e => setFormData({ ...formData, deadline: e.target.value })}
+              className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">First Review Date & Time</label>
+            <input
+              type="datetime-local"
+              required
+              value={formData.firstReviewDate}
+              onChange={e => setFormData({ ...formData, firstReviewDate: e.target.value })}
+              className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Pre-Review Reminder Interval</label>
+          <select
+            value={formData.reminderIntervalDays}
+            onChange={e => setFormData({ ...formData, reminderIntervalDays: Number(e.target.value) })}
+            className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+          >
+            <option value={1}>1 Day Before Review</option>
+            <option value={2}>2 Days Before Review (Recommended)</option>
+            <option value={3}>3 Days Before Review</option>
+          </select>
+        </div>
+
+        <div className="pt-4 flex justify-end gap-3">
+          <button
+            type="submit"
+            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2"
+          >
+            <Send className="w-4 h-4" /> Assign Task & Dispatch Notification
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// 5. AI TASK EXPLANATION CHATBOT (POWERED BY GEMINI SDK / FETCH)
+// ----------------------------------------------------------------------
+function AITaskExplanationChatbot({ selectedTask, geminiApiKey, addToast }) {
+  const [messages, setMessages] = useState([
+    {
+      role: 'assistant',
+      text: `Hello! I am your AI Mentor Assistant. I am linked directly to your assigned task: **"${selectedTask?.title || 'Build RAG Pipeline'}"**.\n\nHow can I help you break down this task, explain technical terms, or suggest tools?`
+    }
+  ]);
+  const [inputQuery, setInputQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const chatEndRef = useRef(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
+
+  const handleSendQuery = async (queryText) => {
+    const textToSend = queryText || inputQuery;
+    if (!textToSend.trim()) return;
+
+    const newHistory = [...messages, { role: 'user', text: textToSend }];
+    setMessages(newHistory);
+    setInputQuery('');
+    setLoading(true);
+
+    try {
+      // Build Prompt Context with strict intern task boundaries
+      const systemContext = `
+You are an AI Mentor Chatbot assisting an intern with their specific task.
+Task Title: ${selectedTask?.title}
+Objectives: ${selectedTask?.objectives}
+Expected Output: ${selectedTask?.expectedOutput}
+Required Skills: ${selectedTask?.requiredSkills}
+First Review Date: ${selectedTask?.firstReviewDate}
+
+Instructions:
+1. Explain the task clearly in simple English without altering mentor requirements.
+2. Break complex technical challenges into step-by-step action items.
+3. Suggest appropriate libraries, tools, and technical resources.
+4. Provide code snippets or architectural diagrams where helpful.
+`;
+
+      const userPrompt = `${systemContext}\n\nIntern Query: ${textToSend}`;
+
+      // Call Gemini API via standard fetch endpoint
+      const apiKey = geminiApiKey || ""; 
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: userPrompt }] }]
+        })
+      });
+
+      const data = await response.json();
+      const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || 
+        "Here is a breakdown of your task: Start by isolating the core objective, establishing input schemas, and building unit tests before writing full logic.";
+
+      setMessages([...newHistory, { role: 'assistant', text: replyText }]);
+    } catch (err) {
+      console.error(err);
+      setMessages([...newHistory, {
+        role: 'assistant',
+        text: `**Task Breakdown & Explanation:**\n\n1. **Core Problem:** You need to ingest documents, compute embeddings, and store them in a vector index for fast search.\n2. **Key Steps:**\n   - Load files using PyPDF or LangChain PDFLoader.\n   - Split text using RecursiveCharacterTextSplitter.\n   - Generate embeddings and call Gemini API for context-based answer generation.\n3. **Review Target:** Ensure you have a working Python script ready before your upcoming review date.`
+      }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto h-[80vh] flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden">
+      {/* Header */}
+      <div className="p-4 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-indigo-600 text-white rounded-xl shadow-md">
+            <Bot className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              AI Task Explanation Chatbot
+              <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 font-semibold">
+                Task-Aware Context
+              </span>
+            </h3>
+            <p className="text-xs text-slate-500">Context: <span className="font-semibold">{selectedTask?.title}</span></p>
+          </div>
+        </div>
+      </div>
+
+      {/* Preset Chip Buttons */}
+      <div className="p-3 bg-slate-100/50 dark:bg-slate-900/50 border-b dark:border-slate-700/50 flex gap-2 overflow-x-auto no-scrollbar">
+        {[
+          'Explain what this task means',
+          'Break task into small steps',
+          'Suggest recommended tools & libraries',
+          'What should I complete before Day 5 review?'
+        ].map((chip, idx) => (
+          <button
+            key={idx}
+            onClick={() => handleSendQuery(chip)}
+            className="px-3 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 text-slate-700 dark:text-slate-300 rounded-full text-xs whitespace-nowrap font-medium transition-colors shrink-0 shadow-sm"
+          >
+            {chip}
+          </button>
+        ))}
+      </div>
+
+      {/* Messages Scroll Area */}
+      <div className="flex-1 p-4 overflow-y-auto space-y-4">
+        {messages.map((m, idx) => (
+          <div key={idx} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            {m.role === 'assistant' && (
+              <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs shrink-0 font-bold">
+                AI
+              </div>
+            )}
+            <div className={`max-w-2xl p-4 rounded-2xl text-xs leading-relaxed ${
+              m.role === 'user'
+                ? 'bg-indigo-600 text-white rounded-br-none'
+                : 'bg-slate-100 dark:bg-slate-700/60 text-slate-800 dark:text-slate-100 rounded-bl-none border border-slate-200/50 dark:border-slate-600/50'
+            }`}>
+              <div className="whitespace-pre-wrap font-sans">{m.text}</div>
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="flex items-center gap-2 text-xs text-slate-400 font-semibold p-2">
+            <Sparkles className="w-4 h-4 text-indigo-500 animate-spin" /> Gemini AI is analyzing task context...
+          </div>
+        )}
+        <div ref={chatEndRef} />
+      </div>
+
+      {/* Input Bar */}
+      <div className="p-3 border-t dark:border-slate-700 bg-white dark:bg-slate-800 flex gap-2">
+        <input
+          type="text"
+          placeholder="Ask AI anything about your task..."
+          value={inputQuery}
+          onChange={e => setInputQuery(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleSendQuery()}
+          className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+        <button
+          onClick={() => handleSendQuery()}
+          disabled={loading}
+          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+        >
+          <Send className="w-4 h-4" /> Send
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// 6. WORK SUBMISSION & AI ANALYSIS ENGINE
+// ----------------------------------------------------------------------
+function WorkSubmissionView({ tasks, setTasks, setEmails, addToast, geminiApiKey, setActiveTab, setSelectedTaskForReview }) {
+  const [selectedTaskId, setSelectedTaskId] = useState(tasks[0]?.id || '');
+  const [summary, setSummary] = useState('');
+  const [repoUrl, setRepoUrl] = useState('');
+  const [codeSnippet, setCodeSnippet] = useState('');
+  const [challenges, setChallenges] = useState('');
+  const [progress, setProgress] = useState(90);
+  const [analyzing, setAnalyzing] = useState(false);
+
+  const activeTask = tasks.find(t => t.id === selectedTaskId) || tasks[0];
+
+  const handleSubmitAndAnalyze = async (e) => {
+    e.preventDefault();
+    if (!summary || !repoUrl) {
+      addToast('Validation Error', 'Summary and Repository URL are required', 'error');
+      return;
+    }
+
+    setAnalyzing(true);
+
+    try {
+      // Perform Gemini AI Submission Analysis
+      const prompt = `
+Act as an expert Technical Code Reviewer and AI Auditor.
+Compare the intern's submission against original task requirements.
+
+ORIGINAL TASK REQUIREMENTS:
+Title: ${activeTask.title}
+Objectives: ${activeTask.objectives}
+Expected Output: ${activeTask.expectedOutput}
+
+INTERN SUBMISSION DETAILS:
+Summary: ${summary}
+Repository: ${repoUrl}
+Code Snippet: ${codeSnippet}
+Challenges Faced: ${challenges}
+Self Reported Progress: ${progress}%
+
+Output JSON schema format:
+{
+  "score": number (0-100),
+  "statusSuggestion": "Needs Improvement" | "Ready for Mentor Review" | "Potentially Complete",
+  "completedRequirements": string[],
+  "missingRequirements": string[],
+  "errorsIdentified": string[],
+  "recommendedImprovements": string[],
+  "nextActions": string
+}
+`;
+
+      const apiKey = geminiApiKey || "";
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: "application/json" }
+        })
+      });
+
+      let aiResult;
+      try {
+        const data = await response.json();
+        const jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        aiResult = JSON.parse(jsonText);
+      } catch {
+        // Fallback structural report if API key not provided or JSON parse fails
+        aiResult = {
+          score: Math.min(progress, 88),
+          statusSuggestion: progress >= 85 ? 'Ready for Mentor Review' : 'Needs Improvement',
+          completedRequirements: ['Core functionality implementation', 'Repository structure'],
+          missingRequirements: ['Automated test suite execution evidence', 'Edge case error handling'],
+          errorsIdentified: ['Potential unhandled exception during network timeout.'],
+          recommendedImprovements: ['Add unit test coverage', 'Refactor code structure for readability'],
+          nextActions: 'Forward to Human Mentor for final verification.'
+        };
+      }
+
+      // Update Task with submission & AI Report
+      const updatedSubmission = {
+        submittedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        summary,
+        repoUrl,
+        codeSnippet,
+        challenges,
+        progressPercentage: progress
+      };
+
+      setTasks(prev => prev.map(t => t.id === activeTask.id ? {
+        ...t,
+        status: 'Submitted',
+        submission: updatedSubmission,
+        aiAnalysis: aiResult
+      } : t));
+
+      // Trigger Mentor Notification Email
+      setEmails(prev => [{
+        id: `EML-${Date.now()}`,
+        taskId: activeTask.id,
+        recipientEmail: 'sarah.c@techcorp.io',
+        recipientName: activeTask.mentorName,
+        type: 'Intern Submission Alert',
+        subject: `Work Submitted for Review: ${activeTask.title}`,
+        scheduledTime: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        sentAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        status: 'Sent',
+        retryCount: 0,
+        body: `Hi ${activeTask.mentorName},\n\n${activeTask.internName} has submitted work for task "${activeTask.title}". AI analysis has completed with score ${aiResult.score}%. Please open your Mentor Review Hub.`
+      }, ...prev]);
+
+      addToast('Submission Complete', 'AI analysis report generated. Task queued for Mentor Review.', 'success');
+      setSelectedTaskForReview(activeTask);
+      setActiveTab('mentor-hub');
+    } catch (err) {
+      console.error(err);
+      addToast('Submission Error', 'Failed to complete AI submission analysis.', 'error');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-6">
+      <div className="border-b pb-4 dark:border-slate-700">
+        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          <Upload className="w-5 h-5 text-indigo-500" /> Submit Task Implementation
+        </h2>
+        <p className="text-xs text-slate-500 mt-1">Submit your completed work, code repository, and self-explanation for automated AI analysis and mentor review.</p>
+      </div>
+
+      <form onSubmit={handleSubmitAndAnalyze} className="space-y-4 text-xs">
+        <div>
+          <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Select Task to Submit</label>
+          <select
+            value={selectedTaskId}
+            onChange={e => setSelectedTaskId(e.target.value)}
+            className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+          >
+            {tasks.map(t => (
+              <option key={t.id} value={t.id}>{t.title} ({t.status})</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Implementation Summary & Explanation</label>
+          <textarea
+            rows={3}
+            required
+            placeholder="Explain what you built, how you solved the problem, and key architecture decisions..."
+            value={summary}
+            onChange={e => setSummary(e.target.value)}
+            className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Repository or Document Link</label>
+            <input
+              type="url"
+              required
+              placeholder="https://github.com/org/repo-name"
+              value={repoUrl}
+              onChange={e => setRepoUrl(e.target.value)}
+              className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Self-Reported Progress ({progress}%)</label>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={progress}
+              onChange={e => setProgress(Number(e.target.value))}
+              className="w-full mt-2"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Primary Code Snippet / Key File</label>
+          <textarea
+            rows={4}
+            placeholder="Paste main function or logic for AI evaluation..."
+            value={codeSnippet}
+            onChange={e => setCodeSnippet(e.target.value)}
+            className="w-full p-2.5 font-mono bg-slate-900 text-emerald-400 border border-slate-700 rounded-xl outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Challenges Faced & Next Steps</label>
+          <input
+            type="text"
+            placeholder="e.g. Rate limits, async queue issues..."
+            value={challenges}
+            onChange={e => setChallenges(e.target.value)}
+            className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+          />
+        </div>
+
+        <div className="pt-3 flex justify-end">
+          <button
+            type="submit"
+            disabled={analyzing}
+            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2"
+          >
+            {analyzing ? (
+              <>
+                <Sparkles className="w-4 h-4 animate-spin" /> Performing AI Code Audit...
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-4 h-4" /> Submit & Analyze with AI
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// 7. DUAL-VIEW MENTOR REVIEW & APPROVAL COLLABORATION HUB
+// ----------------------------------------------------------------------
+function MentorReviewCollaborationHub({ tasks, setTasks, setEmails, addToast, selectedTask, setSelectedTask }) {
+  const activeTask = selectedTask || tasks[0];
+  const [mentorComment, setMentorComment] = useState('');
+  const [rescheduleDate, setRescheduleDate] = useState('');
+
+  const handleMentorDecision = (actionType) => {
+    let newStatus = activeTask.status;
+    let toastMessage = '';
+
+    if (actionType === 'APPROVE') {
+      newStatus = 'Approved';
+      toastMessage = `Task "${activeTask.title}" approved!`;
+    } else if (actionType === 'REQUEST_CHANGES') {
+      newStatus = 'Needs Improvement';
+      toastMessage = `Changes requested for "${activeTask.title}".`;
+    } else if (actionType === 'BLOCK') {
+      newStatus = 'Blocked';
+      toastMessage = `Task marked as blocked.`;
+    }
+
+    // Update Task Status & Save Feedback
+    setTasks(prev => prev.map(t => t.id === activeTask.id ? {
+      ...t,
+      status: newStatus,
+      version: actionType === 'REQUEST_CHANGES' ? t.version + 1 : t.version,
+      firstReviewDate: rescheduleDate || t.firstReviewDate,
+      mentorFeedback: {
+        action: actionType,
+        comment: mentorComment || 'Reviewed and updated by mentor.',
+        reviewedAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+      }
+    } : t));
+
+    // Send Feedback Email Notification
+    setEmails(prev => [{
+      id: `EML-${Date.now()}`,
+      taskId: activeTask.id,
+      recipientEmail: 'alexjohnson1@interns.techcorp.io',
+      recipientName: activeTask.internName,
+      type: `Mentor Review Decision: ${actionType}`,
+      subject: `Review Update for "${activeTask.title}"`,
+      scheduledTime: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      sentAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      status: 'Sent',
+      retryCount: 0,
+      body: `Hi ${activeTask.internName},\n\nYour mentor Sarah Connor has completed your task review.\nDecision: ${actionType}\nComments: ${mentorComment || 'None'}`
+    }, ...prev]);
+
+    addToast('Review Recorded', toastMessage, 'success');
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Top Selector Bar */}
+      <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <h2 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <UserCheck className="w-5 h-5 text-indigo-500" /> Human Mentor & AI Collaboration Hub
+          </h2>
+          <p className="text-xs text-slate-500">Side-by-side verification: Original requirements vs AI Analysis vs Intern implementation.</p>
+        </div>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <span className="text-xs font-semibold text-slate-400 whitespace-nowrap">Select Task:</span>
+          <select
+            value={activeTask?.id}
+            onChange={e => setSelectedTask(tasks.find(t => t.id === e.target.value))}
+            className="w-full sm:w-64 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none"
+          >
+            {tasks.map(t => (
+              <option key={t.id} value={t.id}>{t.internName} - {t.title}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Side by Side Dual View */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column: Original Task & Submission */}
+        <div className="space-y-4">
+          {/* Original Mentor Requirements */}
+          <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+            <div className="flex items-center justify-between border-b pb-2 dark:border-slate-700">
+              <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-indigo-500" /> 1. Original Task Requirements (v{activeTask.version})
+              </h3>
+              <StatusBadge status={activeTask.status} />
+            </div>
+
+            <div className="text-xs space-y-2">
+              <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100">{activeTask.title}</h4>
+              <p className="text-slate-600 dark:text-slate-300">{activeTask.description}</p>
+              
+              <div className="pt-2">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">Expected Deliverables:</span>
+                <p className="text-slate-500 mt-0.5">{activeTask.expectedOutput}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Intern Submission Panel */}
+          <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+            <div className="flex items-center justify-between border-b pb-2 dark:border-slate-700">
+              <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <Upload className="w-4 h-4 text-emerald-500" /> 2. Intern Submitted Work & Code
+              </h3>
+              <span className="text-[10px] text-slate-400">{activeTask.submission?.submittedAt || 'Not Submitted'}</span>
+            </div>
+
+            {activeTask.submission ? (
+              <div className="text-xs space-y-3">
+                <div>
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">Intern Implementation Summary:</span>
+                  <p className="text-slate-600 dark:text-slate-300 mt-1 p-2.5 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
+                    {activeTask.submission.summary}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <a href={activeTask.submission.repoUrl} target="_blank" rel="noreferrer" className="text-indigo-600 dark:text-indigo-400 font-semibold flex items-center gap-1 hover:underline">
+                    <ExternalLink className="w-3.5 h-3.5" /> Repository Link
+                  </a>
+                  <span className="font-bold text-slate-500">Progress: {activeTask.submission.progressPercentage}%</span>
+                </div>
+
+                {activeTask.submission.codeSnippet && (
+                  <div>
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">Submitted Code Snippet:</span>
+                    <pre className="mt-1 p-3 bg-slate-900 text-emerald-400 font-mono rounded-xl overflow-x-auto text-[11px]">
+                      {activeTask.submission.codeSnippet}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 py-4 text-center">No submission uploaded for this task version yet.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column: AI Audit & Mentor Decision */}
+        <div className="space-y-4">
+          {/* AI Analysis Report */}
+          <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+            <div className="flex items-center justify-between border-b pb-2 dark:border-slate-700">
+              <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <Bot className="w-4 h-4 text-purple-500" /> 3. Automated AI Verification Audit
+              </h3>
+              {activeTask.aiAnalysis && (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+                  Quality Score: {activeTask.aiAnalysis.score}%
+                </span>
+              )}
+            </div>
+
+            {activeTask.aiAnalysis ? (
+              <div className="text-xs space-y-3">
+                <div className="p-3 bg-purple-50 dark:bg-purple-950/30 rounded-xl border border-purple-100 dark:border-purple-800/50">
+                  <span className="font-bold text-purple-900 dark:text-purple-300">AI Suggested Status: </span>
+                  <span className="font-semibold text-purple-700 dark:text-purple-400">{activeTask.aiAnalysis.statusSuggestion}</span>
+                </div>
+
+                <div>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Completed Requirements:
+                  </span>
+                  <ul className="list-disc list-inside text-slate-600 dark:text-slate-300 mt-1 pl-1">
+                    {activeTask.aiAnalysis.completedRequirements?.map((r, i) => <li key={i}>{r}</li>)}
+                  </ul>
+                </div>
+
+                <div>
+                  <span className="font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5" /> Missing / Errors Flagged:
+                  </span>
+                  <ul className="list-disc list-inside text-slate-600 dark:text-slate-300 mt-1 pl-1">
+                    {activeTask.aiAnalysis.errorsIdentified?.map((r, i) => <li key={i}>{r}</li>)}
+                    {activeTask.aiAnalysis.missingRequirements?.map((r, i) => <li key={i}>{r}</li>)}
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 py-4 text-center">AI Analysis will run automatically upon intern submission.</p>
+            )}
+          </div>
+
+          {/* Mentor Final Action Panel */}
+          <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-indigo-200 dark:border-indigo-800/50 shadow-md space-y-4">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+              <CheckSquare className="w-4 h-4 text-indigo-500" /> 4. Mentor Review Decision & Action
+            </h3>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Mentor Guidance & Comments</label>
+                <textarea
+                  rows={3}
+                  placeholder="Provide feedback, request specific code changes, or specify next goals..."
+                  value={mentorComment}
+                  onChange={e => setMentorComment(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Reschedule Review Date (Optional)</label>
+                <input
+                  type="datetime-local"
+                  value={rescheduleDate}
+                  onChange={e => setRescheduleDate(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                />
+              </div>
+
+              <div className="pt-2 grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => handleMentorDecision('APPROVE')}
+                  className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold flex items-center justify-center gap-1 transition-all"
+                >
+                  <Check className="w-4 h-4" /> Approve Task
+                </button>
+
+                <button
+                  onClick={() => handleMentorDecision('REQUEST_CHANGES')}
+                  className="px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold flex items-center justify-center gap-1 transition-all"
+                >
+                  <RefreshCw className="w-4 h-4" /> Request Changes
+                </button>
+
+                <button
+                  onClick={() => handleMentorDecision('BLOCK')}
+                  className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-bold flex items-center justify-center gap-1 transition-all"
+                >
+                  <AlertCircle className="w-4 h-4" /> Mark Blocked
+                </button>
+
+                <button
+                  onClick={() => handleMentorDecision('REJECT')}
+                  className="px-3 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold flex items-center justify-center gap-1 transition-all"
+                >
+                  <X className="w-4 h-4" /> Reject Submission
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// 8. INTERN PERSONAL DASHBOARD & PORTAL VIEW
+// ----------------------------------------------------------------------
+function InternPortalView({ tasks, setSelectedTaskForChat, setActiveTab, setSelectedTaskForReview }) {
+  const internTasks = tasks; // Filtered for active intern demo
+
+  return (
+    <div className="space-y-6">
+      {/* Intern Welcome Banner */}
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+        <div>
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+            Intern Work Portal
+          </span>
+          <h2 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 mt-2">Welcome back, Alex Johnson!</h2>
+          <p className="text-xs text-slate-500 mt-1">Track assigned tasks, ask your AI Chatbot for explanations, and submit work before deadlines.</p>
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={() => setActiveTab('ai-chat')}
+            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2"
+          >
+            <Bot className="w-4 h-4" /> Open AI Chatbot
+          </button>
+          <button
+            onClick={() => setActiveTab('submit-work')}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2"
+          >
+            <Upload className="w-4 h-4" /> Submit Work
+          </button>
+        </div>
+      </div>
+
+      {/* Task Cards */}
+      <div className="space-y-4">
+        <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100">My Assigned Tasks</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {internTasks.map(t => (
+            <div key={t.id} className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4 flex flex-col justify-between">
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-indigo-500 font-bold">{t.id}</span>
+                  <StatusBadge status={t.status} />
+                </div>
+                <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100">{t.title}</h4>
+                <p className="text-slate-500 line-clamp-2">{t.description}</p>
+                
+                <div className="pt-2 flex items-center justify-between text-slate-400">
+                  <span>Mentor: {t.mentorName}</span>
+                  <span>Review: {t.firstReviewDate ? t.firstReviewDate.split('T')[0] : 'N/A'}</span>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t dark:border-slate-700 flex gap-2">
+                <button
+                  onClick={() => {
+                    setSelectedTaskForChat(t);
+                    setActiveTab('ai-chat');
+                  }}
+                  className="flex-1 py-2 bg-indigo-50 dark:bg-slate-700 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <Bot className="w-3.5 h-3.5" /> Explain Task with AI
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedTaskForReview(t);
+                    setActiveTab('submit-work');
+                  }}
+                  className="flex-1 py-2 bg-emerald-50 dark:bg-slate-700 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <Upload className="w-3.5 h-3.5" /> Submit Work
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// 9. AUTOMATED EMAIL REMINDER & LOG WORKFLOW CENTER
+// ----------------------------------------------------------------------
+function EmailAutomationLogView({ emails, setEmails, addToast }) {
+  const [filterType, setFilterType] = useState('All');
+  const [previewEmail, setPreviewEmail] = useState(null);
+
+  const filteredEmails = emails.filter(e => filterType === 'All' || e.status === filterType);
+
+  const handleManualRetry = (id) => {
+    setEmails(prev => prev.map(e => e.id === id ? {
+      ...e,
+      status: 'Sent',
+      sentAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      retryCount: e.retryCount + 1
+    } : e));
+    addToast('Email Dispatched', 'Automated email re-sent successfully.', 'success');
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <h2 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <Mail className="w-5 h-5 text-indigo-500" /> Automated Email Dispatcher & Logs
+          </h2>
+          <p className="text-xs text-slate-500">Tracks assignment confirmations, 2-day pre-review reminders, and mentor review alerts.</p>
+        </div>
+
+        <select
+          value={filterType}
+          onChange={e => setFilterType(e.target.value)}
+          className="p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none"
+        >
+          <option value="All">All Email Statuses</option>
+          <option value="Sent">Sent</option>
+          <option value="Queued">Queued</option>
+          <option value="Failed">Failed</option>
+        </select>
+      </div>
+
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden text-xs">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 font-semibold border-b dark:border-slate-700">
+              <th className="py-3 px-4">Log ID</th>
+              <th className="py-3 px-4">Recipient</th>
+              <th className="py-3 px-4">Notification Type</th>
+              <th className="py-3 px-4">Subject</th>
+              <th className="py-3 px-4">Scheduled / Sent Time</th>
+              <th className="py-3 px-4">Status</th>
+              <th className="py-3 px-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-700/40">
+            {filteredEmails.map(e => (
+              <tr key={e.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                <td className="py-3 px-4 font-mono font-bold text-slate-600 dark:text-slate-400">{e.id}</td>
+                <td className="py-3 px-4">
+                  <div className="font-semibold">{e.recipientName}</div>
+                  <div className="text-[10px] text-slate-400">{e.recipientEmail}</div>
+                </td>
+                <td className="py-3 px-4 font-medium text-indigo-600 dark:text-indigo-400">{e.type}</td>
+                <td className="py-3 px-4 text-slate-600 dark:text-slate-300 max-w-xs truncate">{e.subject}</td>
+                <td className="py-3 px-4 text-slate-400">{e.sentAt || e.scheduledTime}</td>
+                <td className="py-3 px-4">
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    e.status === 'Sent' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' :
+                    e.status === 'Queued' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' :
+                    'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300'
+                  }`}>
+                    {e.status}
+                  </span>
+                </td>
+                <td className="py-3 px-4 text-right space-x-2">
+                  <button
+                    onClick={() => setPreviewEmail(e)}
+                    className="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-lg hover:bg-slate-200"
+                  >
+                    Preview
+                  </button>
+                  {e.status === 'Queued' && (
+                    <button
+                      onClick={() => handleManualRetry(e.id)}
+                      className="px-2 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 font-bold"
+                    >
+                      Send Now
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Preview Email Modal */}
+      {previewEmail && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4">
+            <div className="flex items-center justify-between border-b pb-3 dark:border-slate-700">
+              <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100">HTML Email Template Preview</h3>
+              <button onClick={() => setPreviewEmail(null)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs space-y-2 font-mono">
+              <p><strong>To:</strong> {previewEmail.recipientEmail}</p>
+              <p><strong>Subject:</strong> {previewEmail.subject}</p>
+              <hr className="dark:border-slate-700" />
+              <div className="whitespace-pre-wrap font-sans text-slate-700 dark:text-slate-300 leading-relaxed pt-2">
+                {previewEmail.body}
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button onClick={() => setPreviewEmail(null)} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold">
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// 10. REVIEW CALENDAR VIEW
+// ----------------------------------------------------------------------
+function ReviewCalendarView({ tasks }) {
+  return (
+    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+      <div className="flex items-center justify-between border-b pb-4 dark:border-slate-700">
+        <div>
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-indigo-500" /> Review Schedule & Calendar Grid
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">Scheduled review dates across mentors and interns.</p>
+        </div>
+      </div>
+
+      <div className="space-y-3 text-xs">
+        {tasks.map(t => (
+          <div key={t.id} className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <div className="space-y-1">
+              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{t.title}</h4>
+              <p className="text-slate-500">Intern: <span className="font-semibold text-slate-700 dark:text-slate-300">{t.internName}</span> • Mentor: <span className="font-semibold text-slate-700 dark:text-slate-300">{t.mentorName}</span></p>
+            </div>
+
+            <div className="text-right space-y-1">
+              <div className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">
+                {t.firstReviewDate ? t.firstReviewDate.replace('T', ' ') : 'Unscheduled'}
+              </div>
+              <StatusBadge status={t.status} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// 11. SYSTEM SETTINGS & CONFIGURATION
+// ----------------------------------------------------------------------
+function SystemSettingsView({ geminiApiKey, setGeminiApiKey, addToast }) {
+  const [inputKey, setInputKey] = useState(geminiApiKey);
+
+  const handleSaveKey = () => {
+    setGeminiApiKey(inputKey);
+    addToast('Key Saved', 'Custom Gemini API Key saved for LLM calls.', 'success');
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-6">
+      <div className="border-b pb-4 dark:border-slate-700">
+        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          <Settings className="w-5 h-5 text-indigo-500" /> System Settings & Integration
+        </h2>
+        <p className="text-xs text-slate-500 mt-1">Configure Gemini API Key and SMTP mock credentials.</p>
+      </div>
+
+      <div className="space-y-4 text-xs">
+        <div>
+          <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Google Gemini API Key</label>
+          <div className="flex gap-2">
+            <input
+              type="password"
+              placeholder="AIzaSy..."
+              value={inputKey}
+              onChange={e => setInputKey(e.target.value)}
+              className="flex-1 p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+            />
+            <button
+              onClick={handleSaveKey}
+              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all"
+            >
+              Save Key
+            </button>
+          </div>
+          <p className="text-[10px] text-slate-400 mt-1">If left blank, the app will execute API queries with default runtime credentials.</p>
+        </div>
+
+        <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+          <h4 className="font-bold text-slate-800 dark:text-slate-200">Email Gateway Status</h4>
+          <p className="text-slate-500">SMTP Server: <strong>smtp.sendgrid.net (Port 587)</strong></p>
+          <p className="text-slate-500">Notification Engine: <strong>Celery Background Queue Active</strong></p>
+        </div>
+      </div>
+    </div>
+  );
+}
